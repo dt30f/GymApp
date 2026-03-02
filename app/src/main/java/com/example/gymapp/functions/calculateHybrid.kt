@@ -5,8 +5,8 @@ import com.example.gymapp.data.WeekPlan
 
 fun calculateHybrid(oneRepMax: Double): List<WeekPlan> {
 
-    val topPercentages = listOf(0.88, 0.91, 0.93, 0.95)
-    val volumePercentages = listOf(0.80, 0.82, 0.84, 0.86)
+    val topPercentages = listOf(0.89, 0.92, 0.94, 0.96)
+    val volumePercentages = listOf(0.82, 0.84, 0.86, 0.88)
     val backoffPercentage = 0.70
 
     return (0 until 4).map { index ->

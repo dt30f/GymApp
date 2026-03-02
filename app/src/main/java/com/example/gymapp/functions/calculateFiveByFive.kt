@@ -18,7 +18,7 @@ fun calculateFiveByFive(oneRepMax: Double): List<WeekPlan> {
 
         WeekPlan(
             weekNumber = sessionIndex + 1, // sada predstavlja Trening broj
-            sets = List(1) { // u Program detail screen pise 5x5
+            sets = List(5) {
                 SetPlan(5, weight)
             }
         )
