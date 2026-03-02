@@ -35,12 +35,14 @@ Cilj programa je izgradnja osnovne snage, tehnike i mišićne mase kroz linearnu
 Program koristi 90% vašeg 1RM kao Training Max (TM), 
 a radne težine se računaju iz tog broja.
 
-Ciklus traje 4 nedelje:
+Ciklus traje 16 nedelja:
 
 Nedelja 1: 3x5 (65%, 75%, 85%)
 Nedelja 2: 3x3 (70%, 80%, 90%)
 Nedelja 3: 5/3/1 (75%, 85%, 95%)
 Nedelja 4: Deload (40–60%)
+
+Povecava se Training Max (TM) i ponavlja se ciklus,
 
 Poslednja serija svake nedelje je AMRAP (što više ponavljanja uz dobru formu).
 
@@ -49,6 +51,8 @@ Progresija:
 - +5 kg na lower body vežbe po ciklusu
 
 Cilj programa je dugoročni napredak uz kontrolisan umor i pametnu progresiju.
+
+*Deload nedelje se mogu preskočiti ako nema umora posle prva dva ciklusa*
         """.trimIndent()
         val exercises = listOf(
             ExerciseSet("Squat", 3, 5, 65),
