@@ -12,27 +12,42 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavController
 import com.example.gymapp.R
+
+private val Background = Color(0xFF0B1220)
+private val TopBarBg = Color(0xFF070E1B)
+private val Surface = Color(0xFF111A2E)
+private val Surface2 = Color(0xFF141F36)
+private val Accent = Color(0xFFE53935)
+private val TextPrimary = Color(0xFFFFFFFF)
+private val TextSecondary = Color(0xFFAAB3C5)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProgressScreen(navController: NavController) {
 
     Scaffold(
+        containerColor = Background,
         topBar = {
             TopAppBar(
                 title = {
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Column {
                         Text(
                             text = "Your Progress",
-                            color = Color.Red // crvena boja iz Material3 teme
+                            color = TextPrimary,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            "Track progress on your lifts",
+                            color = TextSecondary,
+                            style = MaterialTheme.typography.bodySmall,
                         )
                     }
                 },
                 colors = TopAppBarDefaults.smallTopAppBarColors(
-                    containerColor = Color(0xFF070e1b), // isto i za TopAppBar
-                    titleContentColor = Color.White
+                    containerColor = TopBarBg
                 ),
             )
 
