@@ -20,4 +20,8 @@ class UserRepository @Inject constructor(
         userDao.deleteUser(user)
     }
 
+    suspend fun updateBodyWeight(userId: String, newWeight: Float) {
+        userDao.updateBodyWeight(userId, newWeight)
+    }
+
 }

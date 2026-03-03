@@ -27,7 +27,6 @@ class UserViewModel @Inject constructor(
     private fun loadUser() {
         viewModelScope.launch {
             val user = repository.getUser()
-            Log.d("DB_DEBUG", "Loaded user: $user")
 
             _uiState.value =
                 if (user == null) {
@@ -42,7 +41,8 @@ class UserViewModel @Inject constructor(
         name: String,
         squat1RM: Int,
         bench1RM: Int,
-        deadlift1RM: Int
+        deadlift1RM: Int,
+        bodyWeight: Float
     ) {
         viewModelScope.launch {
             val user = User(
@@ -50,12 +50,21 @@ class UserViewModel @Inject constructor(
                 name = name,
                 squat1RM = squat1RM,
                 bench1RM = bench1RM,
-                deadlift1RM = deadlift1RM
+                deadlift1RM = deadlift1RM,
+                bodyWeight = bodyWeight
             )
 
             repository.insertUser(user)
 
             _uiState.value = UserUiState.HasUser(user)
+        }
+    }
+
+    fun changeBodyWeight(newBodyWeight: Float) {
+        viewModelScope.launch {
+            val user = repository.getUser() ?: return@launch
+            repository.updateBodyWeight(user.id, newBodyWeight)
+            refreshUser()
         }
     }
 

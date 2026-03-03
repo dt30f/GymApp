@@ -65,8 +65,7 @@ class LiftViewModel @Inject constructor(
 
     fun getBodyWeight(): Flow<Float> {
         return userDao.getUserFlow().map { user ->
-            //user?.bodyWeight ?: 0f
-            70f
+            user?.bodyWeight ?: 0f
         }
     }
 

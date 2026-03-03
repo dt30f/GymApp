@@ -9,5 +9,6 @@ data class User(
     val name: String,
     val squat1RM: Int,
     val bench1RM: Int,
-    val deadlift1RM: Int
+    val deadlift1RM: Int,
+    val bodyWeight: Float,
 )

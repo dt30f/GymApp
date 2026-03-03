@@ -3,8 +3,7 @@ package com.example.gymapp.screens.progress
 import android.graphics.Color
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -22,42 +21,67 @@ import java.util.*
 fun LiftChart(lifts: List<LiftEntry>) {
 
     val dateFormatter = remember {
-        SimpleDateFormat("dd/MM", Locale.getDefault())
+        // modernije, krace: 12 Feb
+        SimpleDateFormat("dd MMM", Locale.getDefault())
     }
+
+    // da animacija ne radi svaki put na recomposition
+    var lastSize by remember { mutableStateOf(0) }
 
     AndroidView(
         modifier = Modifier
             .fillMaxWidth()
-            .height(350.dp),
+            .height(320.dp),
 
         factory = { context ->
             LineChart(context).apply {
 
-                setBackgroundColor(Color.parseColor("#121212"))
+                // Transparent jer ti Chart vec stoji u Card containeru
+                setBackgroundColor(Color.TRANSPARENT)
+
+                description.isEnabled = false
+                legend.isEnabled = false
 
                 axisRight.isEnabled = false
-                description.isEnabled = false
-                legend.textColor = Color.WHITE
 
+                // X axis
                 xAxis.apply {
-                    textColor = Color.WHITE
+                    textColor = Color.parseColor("#AAB3C5")
                     position = XAxis.XAxisPosition.BOTTOM
                     setDrawGridLines(false)
+                    setDrawAxisLine(false)
                     granularity = 1f
                     isGranularityEnabled = true
-                    labelRotationAngle = -45f
+                    labelRotationAngle = 0f
+                   // avoidFirstLastClipping = true
+                    // manje labela, cistije
+                    setLabelCount(4, true)
                 }
 
+                // Y axis
                 axisLeft.apply {
-                    textColor = Color.WHITE
+                    textColor = Color.parseColor("#AAB3C5")
+                    setDrawAxisLine(false)
                     setDrawGridLines(true)
-                    gridColor = Color.DKGRAY
+                    gridColor = Color.parseColor("#1F2A40") // suptilan grid
+                    setLabelCount(5, true)
                 }
 
+                // Interaction
                 setScaleEnabled(true)
                 setPinchZoom(true)
                 isDragEnabled = true
-                setVisibleXRangeMaximum(5f)
+
+                // da ne bude prevelik “zoom out”
+                setVisibleXRangeMaximum(7f)
+                setVisibleXRangeMinimum(4f)
+
+                // highlight izgleda lepse
+                isHighlightPerTapEnabled = true
+                isHighlightPerDragEnabled = true
+
+                // Extra padding da marker ne bude odsečen
+                setExtraOffsets(8f, 8f, 8f, 12f)
             }
         },
 
@@ -65,6 +89,7 @@ fun LiftChart(lifts: List<LiftEntry>) {
 
             if (lifts.isEmpty()) {
                 chart.clear()
+                chart.invalidate()
                 return@AndroidView
             }
 
@@ -72,20 +97,41 @@ fun LiftChart(lifts: List<LiftEntry>) {
                 Entry(index.toFloat(), lift.weight)
             }
 
-            val dataSet = LineDataSet(entries, "Weight Progress").apply {
-                color = Color.parseColor("#692020")
-                circleRadius = 6f
-                setCircleColor(Color.parseColor("#7d7575"))
-                valueTextColor = Color.WHITE
-                lineWidth = 3f
+            val accent = Color.parseColor("#E53935")          // tvoj accent (crvena)
+            val accentSoft = Color.parseColor("#33E53935")    // 20% alpha
+
+            val dataSet = LineDataSet(entries, null).apply {
+                color = accent
+                lineWidth = 2.2f
+
+                // modernije tačke
+                setDrawCircles(true)
+                circleRadius = 3.2f
+                setCircleColor(Color.parseColor("#E6E6E6"))
+                setCircleHoleColor(accent)
+                circleHoleRadius = 1.6f
+
+                // bez value texta na liniji
+                setDrawValues(false)
+
+                // fill - veoma suptilan (možeš i skroz false)
                 setDrawFilled(true)
-                fillColor = Color.parseColor("#692020")
+                fillColor = accentSoft
+
+                // bez previše “gumene” krive
                 mode = LineDataSet.Mode.CUBIC_BEZIER
+                cubicIntensity = 0.16f
+
+                // highlight linija
+                highLightColor = Color.parseColor("#66FFFFFF")
+                highlightLineWidth = 1.2f
+            }
+
+            chart.data = LineData(dataSet).apply {
                 setDrawValues(false)
             }
 
-            chart.data = LineData(dataSet)
-
+            // X axis formatter (datum)
             chart.xAxis.valueFormatter = object : ValueFormatter() {
                 override fun getFormattedValue(value: Float): String {
                     val index = value.toInt()
@@ -95,13 +141,20 @@ fun LiftChart(lifts: List<LiftEntry>) {
                 }
             }
 
-            // ✅ Marker se postavlja OVDE (ima pristup novim lifts)
+            // Marker (lep, custom layout)
             chart.marker = LiftMarkerView(chart.context, lifts)
 
             chart.notifyDataSetChanged()
             chart.invalidate()
-            chart.animateX(500)
+
+            // animiraj samo kad se doda nova tacka
+            if (lifts.size > lastSize) {
+                chart.animateX(350)
+            }
+            lastSize = lifts.size
+
+            // auto scroll na kraj (najnovije)
+            chart.moveViewToX((lifts.size - 1).toFloat())
         }
     )
 }
-

@@ -21,6 +21,9 @@ interface UserDao {
     @Update
     suspend fun updateUser(user: User)
 
+    @Query("UPDATE users SET bodyWeight = :newWeight WHERE id = :userId")
+    suspend fun updateBodyWeight(userId: String, newWeight: Float)
+
 
 
 }

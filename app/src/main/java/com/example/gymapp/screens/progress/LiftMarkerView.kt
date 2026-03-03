@@ -2,6 +2,9 @@ package com.example.gymapp.screens.progress
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
+import android.view.Gravity
+import android.widget.LinearLayout
 import android.widget.TextView
 import com.example.gymapp.data.LiftEntry
 import com.github.mikephil.charting.components.MarkerView
@@ -16,28 +19,67 @@ class LiftMarkerView(
     private val lifts: List<LiftEntry>
 ) : MarkerView(context, android.R.layout.simple_list_item_1) {
 
-    private val tvContent: TextView = findViewById(android.R.id.text1)
-    private val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    private val weightText = TextView(context)
+    private val dateText = TextView(context)
+    private val container = LinearLayout(context)
+
+    private val formatter = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
 
     init {
-        tvContent.setTextColor(Color.WHITE)
-        tvContent.setBackgroundColor(Color.parseColor("#1E1E1E"))
-        tvContent.setPadding(16, 8, 16, 8)
+        // Container setup
+        container.orientation = LinearLayout.VERTICAL
+        container.setPadding(18, 14, 18, 14)
+        container.gravity = Gravity.CENTER
+
+        // Background: rounded + subtle border
+        val bg = GradientDrawable().apply {
+            cornerRadius = 18f
+            setColor(Color.parseColor("#111A2E")) // dark surface
+            setStroke(2, Color.parseColor("#1F2A40")) // subtle border
+        }
+        container.background = bg
+
+        // Weight text
+        weightText.apply {
+            setTextColor(Color.WHITE)
+            textSize = 16f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        }
+
+        // Date text
+        dateText.apply {
+            setTextColor(Color.parseColor("#AAB3C5"))
+            textSize = 12f
+        }
+
+        container.addView(weightText)
+        container.addView(dateText)
+
+        // replace default content view
+        val root = findViewById<TextView>(android.R.id.text1)
+        root.text = ""
+        root.setBackgroundColor(Color.TRANSPARENT)
+        root.setPadding(0, 0, 0, 0)
+        root.visibility = TextView.GONE
+
+        addView(container)
     }
 
     override fun refreshContent(e: Entry?, highlight: Highlight?) {
-        e?.let {
-            val index = e.x.toInt()
-            if (index in lifts.indices) {
-                val lift = lifts[index]
-                val dateStr = formatter.format(Date(lift.date))
-                tvContent.text = "${lift.weight} kg\n$dateStr"
-            }
+        if (e == null) return
+
+        val index = e.x.toInt()
+        if (index in lifts.indices) {
+            val lift = lifts[index]
+            weightText.text = "${lift.weight} kg"
+            dateText.text = formatter.format(Date(lift.date))
         }
+
         super.refreshContent(e, highlight)
     }
 
     override fun getOffset(): MPPointF {
-        return MPPointF(-(width / 2f), -height.toFloat())
+        // centered above point
+        return MPPointF(-(width / 2f), -height.toFloat() - 10f)
     }
 }
