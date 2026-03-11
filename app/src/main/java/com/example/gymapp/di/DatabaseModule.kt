@@ -2,6 +2,7 @@ package com.example.gymapp.di
 
 import android.content.Context
 import androidx.room.Room
+import com.example.gymapp.data.ActiveProgramDao
 import com.example.gymapp.data.AppDatabase
 import com.example.gymapp.data.LiftDao
 import com.example.gymapp.data.UserDao
@@ -38,5 +39,10 @@ object DatabaseModule {
     @Provides
     fun provideLiftDao(db: AppDatabase): LiftDao {
         return db.liftDao()
+    }
+
+    @Provides
+    fun provideActiveProgramDao(db: AppDatabase): ActiveProgramDao {
+        return db.activeProgramDao()
     }
 }
