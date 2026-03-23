@@ -30,7 +30,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.gymapp.data.ActiveProgram
-import com.example.gymapp.data.WeekPlan
+import com.example.gymapp.data.ScheduledWorkoutOccurrence
+import com.example.gymapp.data.mapActiveProgramToScheduledWorkouts
+import com.example.gymapp.data.mapActiveProgramsToScheduledWorkouts
+import com.example.gymapp.data.timestampToLocalDate
 import com.example.gymapp.screens.AppAccent
 import com.example.gymapp.screens.AppAccentMuted
 import com.example.gymapp.screens.AppBackground
@@ -46,7 +49,6 @@ import com.example.gymapp.screens.AppTextSecondary
 import com.example.gymapp.screens.MainScaffold
 import com.example.gymapp.viewmodel.ActiveProgramsViewModel
 import java.time.DayOfWeek
-import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -66,6 +68,7 @@ fun ActiveProgramDetailScreen(
     viewModel: ActiveProgramsViewModel = hiltViewModel()
 ) {
     val activeProgram by viewModel.activeProgram(programId).collectAsState(initial = null)
+    val activePrograms by viewModel.activePrograms.collectAsState()
 
     MainScaffold(
         navController = navController,
@@ -75,8 +78,9 @@ fun ActiveProgramDetailScreen(
             EmptyProgramState(padding)
         } else {
             val program = activeProgram!!
-            val scheduledWorkouts = remember(program) { mapProgramToScheduledWorkouts(program) }
-            val workoutsByDate = remember(scheduledWorkouts) { scheduledWorkouts.groupBy { it.date } }
+            val selectedProgramWorkouts = remember(program) { mapActiveProgramToScheduledWorkouts(program) }
+            val sharedScheduledWorkouts = remember(activePrograms) { mapActiveProgramsToScheduledWorkouts(activePrograms) }
+            val workoutsByDate = remember(sharedScheduledWorkouts) { sharedScheduledWorkouts.groupBy { it.date } }
             val today = remember { LocalDate.now(CalendarZone) }
             val todaysWorkouts = workoutsByDate[today].orEmpty()
             var visibleMonth by remember(program.id, program.startDate) {
@@ -99,7 +103,11 @@ fun ActiveProgramDetailScreen(
                 }
 
                 item {
-                    ProgramInfoCard(program, scheduledWorkouts.size)
+                    ProgramInfoCard(
+                        program = program,
+                        plannedWorkouts = selectedProgramWorkouts.size,
+                        sharedWorkoutDays = workoutsByDate.size
+                    )
                 }
 
                 if (todaysWorkouts.isNotEmpty()) {
@@ -209,7 +217,7 @@ private fun ActiveProgramHero(program: ActiveProgram) {
             )
 
             Text(
-                text = "Saved for ${program.selectedLift} with calendar-mapped sessions generated from the persisted plan.",
+                text = "This program now participates in the shared workout calendar with your other active lifts.",
                 color = AppTextSecondary,
                 style = MaterialTheme.typography.bodyLarge
             )
@@ -229,7 +237,8 @@ private fun ActiveProgramHero(program: ActiveProgram) {
 @Composable
 private fun ProgramInfoCard(
     program: ActiveProgram,
-    workoutCount: Int
+    plannedWorkouts: Int,
+    sharedWorkoutDays: Int
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -253,13 +262,14 @@ private fun ProgramInfoCard(
             InfoRow("Lift", program.selectedLift)
             InfoRow("One-rep max", "${program.oneRepMax.toInt()} kg")
             InfoRow("Start date", longDate(timestampToLocalDate(program.startDate)))
-            InfoRow("Planned workouts", workoutCount.toString())
+            InfoRow("Program workouts", plannedWorkouts.toString())
+            InfoRow("Shared workout days", sharedWorkoutDays.toString())
         }
     }
 }
 
 @Composable
-private fun TodaysWorkoutCard(workouts: List<ScheduledWorkout>) {
+private fun TodaysWorkoutCard(workouts: List<ScheduledWorkoutOccurrence>) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = AppLargeCardShape,
@@ -279,7 +289,7 @@ private fun TodaysWorkoutCard(workouts: List<ScheduledWorkout>) {
             )
 
             workouts.forEach { workout ->
-                WorkoutSummaryBlock(workout = workout)
+                WorkoutSummaryBlock(workout)
             }
         }
     }
@@ -288,7 +298,7 @@ private fun TodaysWorkoutCard(workouts: List<ScheduledWorkout>) {
 @Composable
 private fun CalendarCard(
     visibleMonth: YearMonth,
-    workoutsByDate: Map<LocalDate, List<ScheduledWorkout>>,
+    workoutsByDate: Map<LocalDate, List<ScheduledWorkoutOccurrence>>,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
     onDateClick: (LocalDate) -> Unit
@@ -372,18 +382,9 @@ private fun CalendarDayCell(
     isToday: Boolean,
     onClick: () -> Unit
 ) {
-    val containerColor = when {
-        hasWorkout -> AppAccentMuted
-        else -> AppSurfaceRaised
-    }
-    val borderColor = when {
-        isToday -> AppAccent
-        else -> AppSurfaceStroke
-    }
-    val textColor = when {
-        day.isInCurrentMonth -> AppTextPrimary
-        else -> AppTextMuted
-    }
+    val containerColor = if (hasWorkout) AppAccentMuted else AppSurfaceRaised
+    val borderColor = if (isToday) AppAccent else AppSurfaceStroke
+    val textColor = if (day.isInCurrentMonth) AppTextPrimary else AppTextMuted
 
     Column(
         modifier = modifier
@@ -450,7 +451,7 @@ private fun MonthSwitchButton(label: String, onClick: () -> Unit) {
 @Composable
 private fun WorkoutDetailsDialog(
     date: LocalDate,
-    workouts: List<ScheduledWorkout>,
+    workouts: List<ScheduledWorkoutOccurrence>,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -475,7 +476,7 @@ private fun WorkoutDetailsDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 workouts.forEach { workout ->
-                    WorkoutSummaryBlock(workout = workout)
+                    WorkoutSummaryBlock(workout)
                 }
             }
         },
@@ -492,7 +493,7 @@ private fun WorkoutDetailsDialog(
 }
 
 @Composable
-private fun WorkoutSummaryBlock(workout: ScheduledWorkout) {
+private fun WorkoutSummaryBlock(workout: ScheduledWorkoutOccurrence) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -596,60 +597,10 @@ private fun InfoRow(label: String, value: String) {
     }
 }
 
-data class ScheduledWorkout(
-    val date: LocalDate,
-    val programName: String,
-    val lift: String,
-    val displayTitle: String,
-    val rows: List<WorkoutRow>
-)
-
-data class WorkoutRow(
-    val sets: Int,
-    val reps: Int,
-    val weight: Double
-)
-
 data class CalendarDay(
     val date: LocalDate,
     val isInCurrentMonth: Boolean
 )
-
-private fun mapProgramToScheduledWorkouts(program: ActiveProgram): List<ScheduledWorkout> {
-    val startDate = timestampToLocalDate(program.startDate)
-
-    return program.generatedPlan.mapIndexed { index, weekPlan ->
-        val scheduledDate = when (program.programId) {
-            "five_by_five" -> startDate.plusDays(index.toLong() * 3L)
-            else -> startDate.plusWeeks(index.toLong())
-        }
-
-        ScheduledWorkout(
-            date = scheduledDate,
-            programName = program.programName,
-            lift = program.selectedLift,
-            displayTitle = if (program.programId == "five_by_five") {
-                "Workout ${weekPlan.weekNumber}"
-            } else {
-                "Week ${weekPlan.weekNumber}"
-            },
-            rows = aggregateWorkoutRows(weekPlan)
-        )
-    }
-}
-
-private fun aggregateWorkoutRows(weekPlan: WeekPlan): List<WorkoutRow> {
-    return weekPlan.sets
-        .groupBy { it.reps to it.weight }
-        .map { (key, sets) ->
-            WorkoutRow(
-                sets = sets.size,
-                reps = key.first,
-                weight = key.second
-            )
-        }
-        .sortedWith(compareByDescending<WorkoutRow> { it.weight }.thenByDescending { it.reps })
-}
 
 private fun buildCalendarDays(month: YearMonth): List<CalendarDay> {
     val firstOfMonth = month.atDay(1)
@@ -667,10 +618,6 @@ private fun buildCalendarDays(month: YearMonth): List<CalendarDay> {
 
 private fun weekDayLabels(): List<String> = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 
-private fun timestampToLocalDate(timestamp: Long): LocalDate {
-    return Instant.ofEpochMilli(timestamp).atZone(CalendarZone).toLocalDate()
-}
-
 private fun shortDate(date: LocalDate): String = date.format(ShortDateFormatter.withLocale(Locale.getDefault()))
 
 private fun longDate(date: LocalDate): String = date.format(LongDateFormatter.withLocale(Locale.getDefault()))
@@ -678,7 +625,3 @@ private fun longDate(date: LocalDate): String = date.format(LongDateFormatter.wi
 private fun formatWeight(weight: Double): String {
     return if (weight % 1.0 == 0.0) weight.toInt().toString() else weight.toString()
 }
-
-
-
-

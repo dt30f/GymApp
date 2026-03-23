@@ -15,6 +15,9 @@ interface ActiveProgramDao {
     @Query("SELECT * FROM active_programs WHERE userId = :userId ORDER BY startDate DESC")
     fun getActivePrograms(userId: String): Flow<List<ActiveProgram>>
 
+    @Query("SELECT * FROM active_programs WHERE userId = :userId ORDER BY startDate DESC")
+    suspend fun getActiveProgramsSnapshot(userId: String): List<ActiveProgram>
+
     @Query("SELECT * FROM active_programs WHERE id = :programId LIMIT 1")
     fun getActiveProgramById(programId: Long): Flow<ActiveProgram?>
 

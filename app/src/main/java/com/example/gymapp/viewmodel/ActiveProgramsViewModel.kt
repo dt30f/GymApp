@@ -6,6 +6,7 @@ import com.example.gymapp.data.ActiveProgram
 import com.example.gymapp.data.WeekPlan
 import com.example.gymapp.data.repository.ActiveProgramRepository
 import com.example.gymapp.data.repository.StartProgramResult
+import com.example.gymapp.data.timestampToLocalDate
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +15,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import javax.inject.Inject
+
+private val StartDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd MMM", Locale.getDefault())
 
 @HiltViewModel
 class ActiveProgramsViewModel @Inject constructor(
@@ -49,7 +54,11 @@ class ActiveProgramsViewModel @Inject constructor(
             ) {
                 is StartProgramResult.Success -> StartProgramUiState(
                     isSuccess = true,
-                    message = "$programName started for $selectedLift.",
+                    message = if (result.wasShifted) {
+                        "$programName started for $selectedLift. First workout moved to ${timestampToLocalDate(result.resolvedStartDate).format(StartDateFormatter)} to avoid a calendar conflict."
+                    } else {
+                        "$programName started for $selectedLift."
+                    },
                     startedProgramId = result.programRecordId
                 )
 
